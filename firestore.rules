@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function hasRole(role) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isTeacher() {
+      return hasRole('teacher') || isAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Courses collection
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isTeacher();
+      allow delete: if isAdmin();
+
+      match /lessons/{lessonId} {
+        allow read: if isSignedIn();
+        allow write: if isTeacher();
+      }
+
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isSignedIn();
+        allow update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      }
+    }
+
+    // Enrollments
+    match /enrollments/{enrollmentId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(resource.data.userId) || isTeacher());
+      allow delete: if isAdmin();
+    }
+
+    // Quiz submissions
+    match /quizSubmissions/{submissionId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isTeacher());
+      allow create: if isSignedIn();
+      allow update: if isTeacher();
+      allow delete: if isAdmin();
+    }
+
+    // Support tickets
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isTeacher() || isAdmin();
+      allow update: if isSignedIn() && isOwner(resource.data.userId);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    // Referrals
+    match /referrals/{refId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.advocateId) || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+    }
+
+    // Platform settings (admin only)
+    match /settings/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

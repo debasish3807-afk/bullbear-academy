@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
+import { logout } from '@/lib/firebase'
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -18,6 +21,13 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { isAuthenticated, profile, loading } = useAuth()
+  const router = useRouter()
+
+  async function handleLogout() {
+    await logout()
+    router.push('/')
+  }
 
   return (
     <nav className="fixed left-0 right-0 top-7 z-[200] border-b border-line bg-bg/95 px-6 py-3 backdrop-blur-xl" role="navigation" aria-label="Primary navigation">
@@ -43,12 +53,23 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/login">
-            <Button variant="ghost" size="sm">Log In</Button>
-          </Link>
-          <Link href="/signup">
-            <Button size="sm">Start Free</Button>
-          </Link>
+          {!loading && (
+            isAuthenticated ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    {profile?.displayName?.split(' ')[0] || 'Dashboard'}
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>Logout</Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login"><Button variant="ghost" size="sm">Log In</Button></Link>
+                <Link href="/signup"><Button size="sm">Start Free</Button></Link>
+              </>
+            )
+          )}
           <button
             className="flex h-10 w-10 flex-col items-center justify-center gap-1 lg:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -74,6 +95,9 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          {isAuthenticated && (
+            <Link href="/dashboard" className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-gold" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+          )}
         </div>
       )}
     </nav>
