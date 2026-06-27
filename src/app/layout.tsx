@@ -4,6 +4,7 @@ import '@/styles/globals.css'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { MarketTicker } from '@/components/layout/MarketTicker'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -42,13 +43,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${jakarta.variable} ${inter.variable}`}>
       <body>
-        <a href="#main-content" className="fixed left-4 top-[-60px] z-[999] rounded-btn bg-gold px-4 py-2 font-bold text-bg transition-all focus:top-12">
-          Skip to content
-        </a>
-        <MarketTicker />
-        <Navbar />
-        <main id="main-content">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <a href="#main-content" className="fixed left-4 top-[-60px] z-[999] rounded-btn bg-gold px-4 py-2 font-bold text-bg transition-all focus:top-12">
+            Skip to content
+          </a>
+          <MarketTicker />
+          <Navbar />
+          <main id="main-content">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   )
